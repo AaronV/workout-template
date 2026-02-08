@@ -1,60 +1,19 @@
 import type { Exercise, ExerciseDay } from '../types'
 
 type PrintableDayViewProps = {
-  days: ExerciseDay[]
-  selectedPrintDayId: string
   printableDay: ExerciseDay | null
   exerciseLookup: Map<string, Exercise>
-  onSelectedPrintDayIdChange: (dayId: string) => void
-  onPrint: () => void
 }
 
-function PrintableDayView({
-  days,
-  selectedPrintDayId,
-  printableDay,
-  exerciseLookup,
-  onSelectedPrintDayIdChange,
-  onPrint,
-}: PrintableDayViewProps) {
+function PrintableDayView({ printableDay, exerciseLookup }: PrintableDayViewProps) {
   const weekCopies = [
     { label: 'A', startWeek: 1 },
     { label: 'B', startWeek: 4 },
   ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="no-print rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-lg font-semibold">Printable View</h2>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none ring-offset-2 focus:border-slate-500 focus:ring-2 focus:ring-slate-300"
-            value={selectedPrintDayId}
-            onChange={(event) => onSelectedPrintDayIdChange(event.target.value)}
-            disabled={days.length === 0}
-          >
-            {days.length === 0 ? (
-              <option value="">No days available</option>
-            ) : (
-              days.map((day) => (
-                <option key={day.id} value={day.id}>
-                  {day.title}
-                </option>
-              ))
-            )}
-          </select>
-          <button
-            type="button"
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={onPrint}
-            disabled={!printableDay}
-          >
-            Print Day
-          </button>
-        </div>
-      </section>
-
-      <section className="print-sheet rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 print:shadow-none print:ring-0">
+    <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 print:shadow-none print:ring-0">
+      <div className="print-sheet">
         {printableDay ? (
           <>
             <div className="print-copies grid gap-6 lg:grid-cols-2">
@@ -118,8 +77,8 @@ function PrintableDayView({
         ) : (
           <p className="text-sm text-slate-500">Create and select a day to view a printable template.</p>
         )}
-      </section>
-    </div>
+      </div>
+    </section>
   )
 }
 
