@@ -1,211 +1,33 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useState } from 'react'
 import DayEditor from './components/DayEditor'
 import ExerciseEditor from './components/ExerciseEditor'
 import PrintableDayView from './components/PrintableDayView'
-import { loadData, saveData } from './lib/storage'
-import {
-  DEFAULT_REPS,
-  DEFAULT_REST,
-  MAX_DAY_EXERCISES,
-  type AppData,
-  type Exercise,
-  type ExerciseDay,
-} from './types'
+import PrintTabControls from './components/PrintTabControls'
+import { loadData } from './lib/storage'
+import { type ActiveTab, useWorkoutTemplate } from './hooks/useWorkoutTemplate'
 
-function makeId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function makeDayTitle(dayCount: number): string {
-  return `Day ${dayCount + 1}`
-}
+const TABS: Array<{ id: ActiveTab; label: string }> = [
+  { id: 'exercises', label: 'Exercises' },
+  { id: 'days', label: 'Days' },
+  { id: 'print', label: 'Print' },
+]
 
 function App() {
-  const [initialData] = useState<AppData>(() => loadData())
-  const [activeTab, setActiveTab] = useState<'exercises' | 'days' | 'print'>('exercises')
-
-  const [exerciseName, setExerciseName] = useState('')
-  const [exerciseReps, setExerciseReps] = useState(DEFAULT_REPS)
-  const [exerciseRest, setExerciseRest] = useState(DEFAULT_REST)
-  const [exerciseNotes, setExerciseNotes] = useState('')
-  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
-  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
-
-  const [exercises, setExercises] = useState<Exercise[]>(initialData.exercises)
-  const [days, setDays] = useState<ExerciseDay[]>(initialData.days)
-
-  const [dayTitle, setDayTitle] = useState(makeDayTitle(initialData.days.length))
-  const [dayExerciseIds, setDayExerciseIds] = useState<string[]>([])
-  const [selectedDayExerciseId, setSelectedDayExerciseId] = useState('')
-  const [editingDayId, setEditingDayId] = useState<string | null>(null)
-  const [isDayModalOpen, setIsDayModalOpen] = useState(false)
-  const [selectedPrintDayId, setSelectedPrintDayId] = useState(initialData.days[0]?.id ?? '')
-
-  const sortedExercises = [...exercises].sort((firstExercise, secondExercise) =>
-    firstExercise.name.localeCompare(secondExercise.name, undefined, { sensitivity: 'base' }),
-  )
-
-  const exerciseLookup = useMemo(() => {
-    return new Map(exercises.map((exercise) => [exercise.id, exercise]))
-  }, [exercises])
-
-  const printableDay = days.find((day) => day.id === selectedPrintDayId) ?? null
-
-  useEffect(() => {
-    saveData({ exercises, days })
-  }, [exercises, days])
-
-  useEffect(() => {
-    setSelectedPrintDayId((currentSelectedDayId) => {
-      if (days.length === 0) return ''
-      if (currentSelectedDayId && days.some((day) => day.id === currentSelectedDayId)) {
-        return currentSelectedDayId
-      }
-
-      return days[0].id
-    })
-  }, [days])
-
-  const resetExerciseForm = () => {
-    setExerciseName('')
-    setExerciseReps(DEFAULT_REPS)
-    setExerciseRest(DEFAULT_REST)
-    setExerciseNotes('')
-    setEditingExerciseId(null)
-    setIsExerciseModalOpen(false)
-  }
-
-  const resetDayForm = (nextDayCount: number) => {
-    setDayTitle(makeDayTitle(nextDayCount))
-    setDayExerciseIds([])
-    setSelectedDayExerciseId('')
-    setEditingDayId(null)
-    setIsDayModalOpen(false)
-  }
-
-  const handleSaveExercise = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const trimmedExerciseName = exerciseName.trim()
-    if (!trimmedExerciseName) return
-
-    const nextExercise: Exercise = {
-      id: editingExerciseId ?? makeId(),
-      name: trimmedExerciseName,
-      reps: exerciseReps.trim(),
-      rest: exerciseRest.trim(),
-      notes: exerciseNotes.trim(),
-    }
-
-    if (editingExerciseId) {
-      setExercises((currentExercises) =>
-        currentExercises.map((exercise) => (exercise.id === editingExerciseId ? nextExercise : exercise)),
-      )
-    } else {
-      setExercises((currentExercises) => [...currentExercises, nextExercise])
-    }
-
-    resetExerciseForm()
-  }
-
-  const handleDeleteExercise = (exerciseId: string) => {
-    setExercises((currentExercises) => currentExercises.filter((exercise) => exercise.id !== exerciseId))
-
-    setDays((currentDays) =>
-      currentDays.map((day) => ({
-        ...day,
-        exerciseIds: day.exerciseIds.filter((id) => id !== exerciseId),
-      })),
-    )
-
-    setDayExerciseIds((currentIds) => currentIds.filter((id) => id !== exerciseId))
-
-    if (editingExerciseId === exerciseId) {
-      resetExerciseForm()
-    }
-  }
-
-  const handleEditExercise = (exercise: Exercise) => {
-    setEditingExerciseId(exercise.id)
-    setExerciseName(exercise.name)
-    setExerciseReps(exercise.reps)
-    setExerciseRest(exercise.rest)
-    setExerciseNotes(exercise.notes)
-    setIsExerciseModalOpen(true)
-  }
-
-  const handleOpenCreateExercise = () => {
-    resetExerciseForm()
-    setIsExerciseModalOpen(true)
-  }
-
-  const handleAddExerciseToDay = () => {
-    if (!selectedDayExerciseId) return
-    if (dayExerciseIds.includes(selectedDayExerciseId)) return
-    if (dayExerciseIds.length >= MAX_DAY_EXERCISES) return
-
-    setDayExerciseIds((currentIds) => [...currentIds, selectedDayExerciseId])
-    setSelectedDayExerciseId('')
-  }
-
-  const handleRemoveExerciseFromDay = (exerciseId: string) => {
-    setDayExerciseIds((currentIds) => currentIds.filter((id) => id !== exerciseId))
-  }
-
-  const handleSaveDay = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const trimmedTitle = dayTitle.trim()
-    if (!trimmedTitle) return
-    if (dayExerciseIds.length === 0) return
-
-    const nextDay: ExerciseDay = {
-      id: editingDayId ?? makeId(),
-      title: trimmedTitle,
-      exerciseIds: dayExerciseIds,
-    }
-
-    if (editingDayId) {
-      setDays((currentDays) => {
-        const nextDays = currentDays.map((day) => (day.id === editingDayId ? nextDay : day))
-        resetDayForm(nextDays.length)
-        return nextDays
-      })
-      return
-    }
-
-    setDays((currentDays) => {
-      const nextDays = [...currentDays, nextDay]
-      resetDayForm(nextDays.length)
-      return nextDays
-    })
-  }
-
-  const handleEditDay = (day: ExerciseDay) => {
-    setEditingDayId(day.id)
-    setDayTitle(day.title)
-    setDayExerciseIds(day.exerciseIds)
-    setSelectedDayExerciseId('')
-    setIsDayModalOpen(true)
-  }
-
-  const handleOpenCreateDay = () => {
-    resetDayForm(days.length)
-    setIsDayModalOpen(true)
-  }
-
-  const handleDeleteDay = (dayId: string) => {
-    setDays((currentDays) => {
-      const nextDays = currentDays.filter((day) => day.id !== dayId)
-      if (editingDayId === dayId) {
-        resetDayForm(nextDays.length)
-      }
-      return nextDays
-    })
-  }
+  const [initialData] = useState(() => loadData())
+  const {
+    activeTab,
+    setActiveTab,
+    days,
+    printableDay,
+    exerciseLookup,
+    selectedPrintDayId,
+    setSelectedPrintDayId,
+    exerciseEditorProps,
+    dayEditorProps,
+  } = useWorkoutTemplate({
+    initialExercises: initialData.exercises,
+    initialDays: initialData.days,
+  })
 
   return (
     <main className="min-h-screen bg-slate-100 p-8 text-slate-900 print:bg-white print:p-0">
@@ -217,121 +39,38 @@ function App() {
           </p>
 
           <div className="mt-6 flex gap-2 border-b border-slate-200">
-            <button
-              type="button"
-              className={`rounded-t-md px-4 py-2 text-sm font-medium ${
-                activeTab === 'exercises'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-              onClick={() => setActiveTab('exercises')}
-            >
-              Exercises
-            </button>
-            <button
-              type="button"
-              className={`rounded-t-md px-4 py-2 text-sm font-medium ${
-                activeTab === 'days'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-              onClick={() => setActiveTab('days')}
-            >
-              Days
-            </button>
-            <button
-              type="button"
-              className={`rounded-t-md px-4 py-2 text-sm font-medium ${
-                activeTab === 'print'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-              onClick={() => setActiveTab('print')}
-            >
-              Print
-            </button>
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`rounded-t-md px-4 py-2 text-sm font-medium ${
+                  activeTab === tab.id
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <div className="mt-6">
-            {activeTab === 'exercises' ? (
-              <ExerciseEditor
-                isModalOpen={isExerciseModalOpen}
-                exerciseName={exerciseName}
-                exerciseReps={exerciseReps}
-                exerciseRest={exerciseRest}
-                exerciseNotes={exerciseNotes}
-                editingExerciseId={editingExerciseId}
-                exercises={exercises}
-                onOpenCreateExercise={handleOpenCreateExercise}
-                onCloseExerciseModal={resetExerciseForm}
-                onExerciseNameChange={setExerciseName}
-                onExerciseRepsChange={setExerciseReps}
-                onExerciseRestChange={setExerciseRest}
-                onExerciseNotesChange={setExerciseNotes}
-                onSaveExercise={handleSaveExercise}
-                onCancelEditExercise={resetExerciseForm}
-                onEditExercise={handleEditExercise}
-                onDeleteExercise={handleDeleteExercise}
-              />
-            ) : activeTab === 'days' ? (
-              <DayEditor
-                isModalOpen={isDayModalOpen}
-                dayTitle={dayTitle}
-                dayExerciseIds={dayExerciseIds}
-                selectedDayExerciseId={selectedDayExerciseId}
-                editingDayId={editingDayId}
+            {activeTab === 'exercises' ? <ExerciseEditor {...exerciseEditorProps} /> : null}
+            {activeTab === 'days' ? <DayEditor {...dayEditorProps} /> : null}
+            {activeTab === 'print' ? (
+              <PrintTabControls
                 days={days}
-                sortedExercises={sortedExercises}
-                exerciseLookup={exerciseLookup}
-                maxDayExercises={MAX_DAY_EXERCISES}
-                onOpenCreateDay={handleOpenCreateDay}
-                onCloseDayModal={() => resetDayForm(days.length)}
-                onDayTitleChange={setDayTitle}
-                onSelectedDayExerciseIdChange={setSelectedDayExerciseId}
-                onAddExerciseToDay={handleAddExerciseToDay}
-                onRemoveExerciseFromDay={handleRemoveExerciseFromDay}
-                onSaveDay={handleSaveDay}
-                onCancelEditDay={() => resetDayForm(days.length)}
-                onEditDay={handleEditDay}
-                onDeleteDay={handleDeleteDay}
+                selectedPrintDayId={selectedPrintDayId}
+                hasPrintableDay={Boolean(printableDay)}
+                onSelectedPrintDayIdChange={setSelectedPrintDayId}
+                onPrint={() => window.print()}
               />
-            ) : (
-              <section>
-                <h2 className="text-lg font-semibold">Printable View</h2>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <select
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none ring-offset-2 focus:border-slate-500 focus:ring-2 focus:ring-slate-300"
-                    value={selectedPrintDayId}
-                    onChange={(event) => setSelectedPrintDayId(event.target.value)}
-                    disabled={days.length === 0}
-                  >
-                    {days.length === 0 ? (
-                      <option value="">No days available</option>
-                    ) : (
-                      days.map((day) => (
-                        <option key={day.id} value={day.id}>
-                          {day.title}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <button
-                    type="button"
-                    className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => window.print()}
-                    disabled={!printableDay}
-                  >
-                    Print Day
-                  </button>
-                </div>
-              </section>
-            )}
+            ) : null}
           </div>
         </section>
 
-        {activeTab === 'print' ? (
-          <PrintableDayView printableDay={printableDay} exerciseLookup={exerciseLookup} />
-        ) : null}
+        {activeTab === 'print' ? <PrintableDayView printableDay={printableDay} exerciseLookup={exerciseLookup} /> : null}
       </div>
     </main>
   )
