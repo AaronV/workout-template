@@ -261,7 +261,7 @@ function App() {
                 exerciseRest={exerciseRest}
                 exerciseNotes={exerciseNotes}
                 editingExerciseId={editingExerciseId}
-                sortedExercises={sortedExercises}
+                exercises={exercises}
                 onOpenCreateExercise={handleOpenCreateExercise}
                 onCloseExerciseModal={resetExerciseForm}
                 onExerciseNameChange={setExerciseName}
