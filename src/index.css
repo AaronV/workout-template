@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @page {
-  size: letter portrait;
-  margin: 0.5in;
+  size: letter landscape;
+  margin: 0.35in;
 }
 
 @media print {
@@ -22,8 +22,25 @@
     page-break-after: avoid;
   }
 
+  .print-copies {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.2in;
+  }
+
+  .print-copy {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .print-title {
     margin-top: 0;
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .print-exercise-list {
+    margin-top: 0.1in;
   }
 
   .print-exercise {

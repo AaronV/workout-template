@@ -27,12 +27,14 @@ function makeDayTitle(dayCount: number): string {
 
 function App() {
   const [initialData] = useState<AppData>(() => loadData())
+  const [activeTab, setActiveTab] = useState<'exercises' | 'days' | 'print'>('exercises')
 
   const [exerciseName, setExerciseName] = useState('')
   const [exerciseReps, setExerciseReps] = useState(DEFAULT_REPS)
   const [exerciseRest, setExerciseRest] = useState(DEFAULT_REST)
   const [exerciseNotes, setExerciseNotes] = useState('')
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null)
+  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
 
   const [exercises, setExercises] = useState<Exercise[]>(initialData.exercises)
   const [days, setDays] = useState<ExerciseDay[]>(initialData.days)
@@ -41,6 +43,7 @@ function App() {
   const [dayExerciseIds, setDayExerciseIds] = useState<string[]>([])
   const [selectedDayExerciseId, setSelectedDayExerciseId] = useState('')
   const [editingDayId, setEditingDayId] = useState<string | null>(null)
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false)
   const [selectedPrintDayId, setSelectedPrintDayId] = useState(initialData.days[0]?.id ?? '')
 
   const sortedExercises = [...exercises].sort((firstExercise, secondExercise) =>
@@ -74,6 +77,7 @@ function App() {
     setExerciseRest(DEFAULT_REST)
     setExerciseNotes('')
     setEditingExerciseId(null)
+    setIsExerciseModalOpen(false)
   }
 
   const resetDayForm = (nextDayCount: number) => {
@@ -81,6 +85,7 @@ function App() {
     setDayExerciseIds([])
     setSelectedDayExerciseId('')
     setEditingDayId(null)
+    setIsDayModalOpen(false)
   }
 
   const handleSaveExercise = (event: FormEvent<HTMLFormElement>) => {
@@ -130,6 +135,12 @@ function App() {
     setExerciseReps(exercise.reps)
     setExerciseRest(exercise.rest)
     setExerciseNotes(exercise.notes)
+    setIsExerciseModalOpen(true)
+  }
+
+  const handleOpenCreateExercise = () => {
+    resetExerciseForm()
+    setIsExerciseModalOpen(true)
   }
 
   const handleAddExerciseToDay = () => {
@@ -178,6 +189,12 @@ function App() {
     setDayTitle(day.title)
     setDayExerciseIds(day.exerciseIds)
     setSelectedDayExerciseId('')
+    setIsDayModalOpen(true)
+  }
+
+  const handleOpenCreateDay = () => {
+    resetDayForm(days.length)
+    setIsDayModalOpen(true)
   }
 
   const handleDeleteDay = (dayId: string) => {
@@ -199,53 +216,97 @@ function App() {
             Build and print your workout sheet, then fill in sets and reps at the gym.
           </p>
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:items-start">
-            <ExerciseEditor
-              exerciseName={exerciseName}
-              exerciseReps={exerciseReps}
-              exerciseRest={exerciseRest}
-              exerciseNotes={exerciseNotes}
-              editingExerciseId={editingExerciseId}
-              sortedExercises={sortedExercises}
-              onExerciseNameChange={setExerciseName}
-              onExerciseRepsChange={setExerciseReps}
-              onExerciseRestChange={setExerciseRest}
-              onExerciseNotesChange={setExerciseNotes}
-              onSaveExercise={handleSaveExercise}
-              onCancelEditExercise={resetExerciseForm}
-              onEditExercise={handleEditExercise}
-              onDeleteExercise={handleDeleteExercise}
-            />
+          <div className="mt-6 flex gap-2 border-b border-slate-200">
+            <button
+              type="button"
+              className={`rounded-t-md px-4 py-2 text-sm font-medium ${
+                activeTab === 'exercises'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+              onClick={() => setActiveTab('exercises')}
+            >
+              Exercises
+            </button>
+            <button
+              type="button"
+              className={`rounded-t-md px-4 py-2 text-sm font-medium ${
+                activeTab === 'days'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+              onClick={() => setActiveTab('days')}
+            >
+              Days
+            </button>
+            <button
+              type="button"
+              className={`rounded-t-md px-4 py-2 text-sm font-medium ${
+                activeTab === 'print'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+              onClick={() => setActiveTab('print')}
+            >
+              Print
+            </button>
+          </div>
 
-            <DayEditor
-              dayTitle={dayTitle}
-              dayExerciseIds={dayExerciseIds}
-              selectedDayExerciseId={selectedDayExerciseId}
-              editingDayId={editingDayId}
-              days={days}
-              sortedExercises={sortedExercises}
-              exerciseLookup={exerciseLookup}
-              maxDayExercises={MAX_DAY_EXERCISES}
-              onDayTitleChange={setDayTitle}
-              onSelectedDayExerciseIdChange={setSelectedDayExerciseId}
-              onAddExerciseToDay={handleAddExerciseToDay}
-              onRemoveExerciseFromDay={handleRemoveExerciseFromDay}
-              onSaveDay={handleSaveDay}
-              onCancelEditDay={() => resetDayForm(days.length)}
-              onEditDay={handleEditDay}
-              onDeleteDay={handleDeleteDay}
-            />
+          <div className="mt-6">
+            {activeTab === 'exercises' ? (
+              <ExerciseEditor
+                isModalOpen={isExerciseModalOpen}
+                exerciseName={exerciseName}
+                exerciseReps={exerciseReps}
+                exerciseRest={exerciseRest}
+                exerciseNotes={exerciseNotes}
+                editingExerciseId={editingExerciseId}
+                sortedExercises={sortedExercises}
+                onOpenCreateExercise={handleOpenCreateExercise}
+                onCloseExerciseModal={resetExerciseForm}
+                onExerciseNameChange={setExerciseName}
+                onExerciseRepsChange={setExerciseReps}
+                onExerciseRestChange={setExerciseRest}
+                onExerciseNotesChange={setExerciseNotes}
+                onSaveExercise={handleSaveExercise}
+                onCancelEditExercise={resetExerciseForm}
+                onEditExercise={handleEditExercise}
+                onDeleteExercise={handleDeleteExercise}
+              />
+            ) : activeTab === 'days' ? (
+              <DayEditor
+                isModalOpen={isDayModalOpen}
+                dayTitle={dayTitle}
+                dayExerciseIds={dayExerciseIds}
+                selectedDayExerciseId={selectedDayExerciseId}
+                editingDayId={editingDayId}
+                days={days}
+                sortedExercises={sortedExercises}
+                exerciseLookup={exerciseLookup}
+                maxDayExercises={MAX_DAY_EXERCISES}
+                onOpenCreateDay={handleOpenCreateDay}
+                onCloseDayModal={() => resetDayForm(days.length)}
+                onDayTitleChange={setDayTitle}
+                onSelectedDayExerciseIdChange={setSelectedDayExerciseId}
+                onAddExerciseToDay={handleAddExerciseToDay}
+                onRemoveExerciseFromDay={handleRemoveExerciseFromDay}
+                onSaveDay={handleSaveDay}
+                onCancelEditDay={() => resetDayForm(days.length)}
+                onEditDay={handleEditDay}
+                onDeleteDay={handleDeleteDay}
+              />
+            ) : (
+              <PrintableDayView
+                days={days}
+                selectedPrintDayId={selectedPrintDayId}
+                printableDay={printableDay}
+                exerciseLookup={exerciseLookup}
+                onSelectedPrintDayIdChange={setSelectedPrintDayId}
+                onPrint={() => window.print()}
+              />
+            )}
           </div>
         </section>
-
-        <PrintableDayView
-          days={days}
-          selectedPrintDayId={selectedPrintDayId}
-          printableDay={printableDay}
-          exerciseLookup={exerciseLookup}
-          onSelectedPrintDayIdChange={setSelectedPrintDayId}
-          onPrint={() => window.print()}
-        />
       </div>
     </main>
   )
