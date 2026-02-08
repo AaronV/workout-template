@@ -77,6 +77,11 @@ export function useExercises({ initialExercises }: UseExercisesOptions) {
     setIsExerciseModalOpen(true)
   }
 
+  const replaceExercises = (nextExercises: Exercise[]) => {
+    setExercises(nextExercises)
+    resetExerciseForm()
+  }
+
   return {
     exercises,
     isExerciseModalOpen,
@@ -93,6 +98,7 @@ export function useExercises({ initialExercises }: UseExercisesOptions) {
     handleDeleteExercise,
     handleEditExercise,
     handleOpenCreateExercise,
+    replaceExercises,
     resetExerciseForm,
   }
 }

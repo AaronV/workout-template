@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { saveData } from '../lib/storage'
+import { clearStoredData, parseImportedData, saveData, serializeData } from '../lib/storage'
 import { MAX_DAY_EXERCISES, type Exercise, type ExerciseDay } from '../types'
 import { useDays } from './useDays'
 import { useExercises } from './useExercises'
@@ -28,6 +28,30 @@ export function useWorkoutTemplate({ initialExercises, initialDays }: UseWorkout
     daysState.removeExerciseReferences(exerciseId)
   }
 
+  const exportAllData = () => {
+    return serializeData({
+      exercises: exercisesState.exercises,
+      days: daysState.days,
+    })
+  }
+
+  const importAllData = (raw: string) => {
+    const parsedData = parseImportedData(raw)
+    if (!parsedData) {
+      return false
+    }
+
+    exercisesState.replaceExercises(parsedData.exercises)
+    daysState.replaceDays(parsedData.days)
+    return true
+  }
+
+  const clearAllData = () => {
+    clearStoredData()
+    exercisesState.replaceExercises([])
+    daysState.replaceDays([])
+  }
+
   return {
     activeTab,
     setActiveTab,
@@ -36,6 +60,9 @@ export function useWorkoutTemplate({ initialExercises, initialDays }: UseWorkout
     exerciseLookup: daysState.exerciseLookup,
     selectedPrintDayId: printState.selectedPrintDayId,
     setSelectedPrintDayId: printState.setSelectedPrintDayId,
+    exportAllData,
+    importAllData,
+    clearAllData,
     exerciseEditorProps: {
       isModalOpen: exercisesState.isExerciseModalOpen,
       exerciseName: exercisesState.exerciseName,

@@ -24,68 +24,103 @@ function isExerciseDay(value: unknown): value is ExerciseDay {
   )
 }
 
-export function loadData(): AppData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      return { exercises: [], days: [] }
-    }
-
-    const parsed = JSON.parse(raw) as StoredDataV1 | StoredDataV2
-
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      !('version' in parsed) ||
-      typeof parsed.version !== 'number'
-    ) {
-      localStorage.removeItem(STORAGE_KEY)
-      return { exercises: [], days: [] }
-    }
-
-    if (parsed.version === STORAGE_VERSION) {
-      if (
-        Array.isArray(parsed.exercises) &&
-        parsed.exercises.every(isExercise) &&
-        Array.isArray(parsed.days) &&
-        parsed.days.every(isExerciseDay)
-      ) {
-        return {
-          exercises: parsed.exercises,
-          days: parsed.days,
-        }
-      }
-
-      localStorage.removeItem(STORAGE_KEY)
-      return { exercises: [], days: [] }
-    }
-
-    if (parsed.version === 1) {
-      if (Array.isArray(parsed.exercises) && parsed.exercises.every(isExercise)) {
-        return {
-          exercises: parsed.exercises,
-          days: [],
-        }
-      }
-
-      localStorage.removeItem(STORAGE_KEY)
-      return { exercises: [], days: [] }
-    }
-
-    localStorage.removeItem(STORAGE_KEY)
-    return { exercises: [], days: [] }
-  } catch {
-    localStorage.removeItem(STORAGE_KEY)
-    return { exercises: [], days: [] }
+function parseStoredData(parsed: unknown): AppData | null {
+  if (typeof parsed !== 'object' || parsed === null) {
+    return null
   }
+
+  const candidate = parsed as { version?: unknown; exercises?: unknown; days?: unknown }
+
+  if (!('version' in candidate)) {
+    if (
+      Array.isArray(candidate.exercises) &&
+      candidate.exercises.every(isExercise) &&
+      Array.isArray(candidate.days) &&
+      candidate.days.every(isExerciseDay)
+    ) {
+      return {
+        exercises: candidate.exercises,
+        days: candidate.days,
+      }
+    }
+
+    return null
+  }
+
+  if (typeof candidate.version !== 'number') {
+    return null
+  }
+
+  if (candidate.version === STORAGE_VERSION) {
+    if (
+      Array.isArray(candidate.exercises) &&
+      candidate.exercises.every(isExercise) &&
+      Array.isArray(candidate.days) &&
+      candidate.days.every(isExerciseDay)
+    ) {
+      return {
+        exercises: candidate.exercises,
+        days: candidate.days,
+      }
+    }
+
+    return null
+  }
+
+  if (candidate.version === 1) {
+    if (Array.isArray(candidate.exercises) && candidate.exercises.every(isExercise)) {
+      return {
+        exercises: candidate.exercises,
+        days: [],
+      }
+    }
+
+    return null
+  }
+
+  return null
 }
 
-export function saveData(data: AppData): void {
-  const payload: StoredDataV2 = {
+function toStoredPayload(data: AppData): StoredDataV2 {
+  return {
     version: STORAGE_VERSION,
     exercises: data.exercises,
     days: data.days,
   }
+}
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+export function parseImportedData(raw: string): AppData | null {
+  try {
+    const parsed = JSON.parse(raw) as StoredDataV1 | StoredDataV2 | AppData
+    return parseStoredData(parsed)
+  } catch {
+    return null
+  }
+}
+
+export function serializeData(data: AppData): string {
+  return JSON.stringify(toStoredPayload(data), null, 2)
+}
+
+export function clearStoredData(): void {
+  localStorage.removeItem(STORAGE_KEY)
+}
+
+export function loadData(): AppData {
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (!raw) {
+    return { exercises: [], days: [] }
+  }
+
+  const data = parseImportedData(raw)
+  if (data) {
+    return data
+  }
+
+  clearStoredData()
+  return { exercises: [], days: [] }
+}
+
+export function saveData(data: AppData): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toStoredPayload(data)))
 }

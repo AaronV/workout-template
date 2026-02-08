@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import AppFooterControls from './components/AppFooterControls'
 import DayEditor from './components/DayEditor'
 import ExerciseEditor from './components/ExerciseEditor'
 import PrintableDayView from './components/PrintableDayView'
@@ -22,6 +23,9 @@ function App() {
     exerciseLookup,
     selectedPrintDayId,
     setSelectedPrintDayId,
+    exportAllData,
+    importAllData,
+    clearAllData,
     exerciseEditorProps,
     dayEditorProps,
   } = useWorkoutTemplate({
@@ -71,6 +75,13 @@ function App() {
         </section>
 
         {activeTab === 'print' ? <PrintableDayView printableDay={printableDay} exerciseLookup={exerciseLookup} /> : null}
+
+        <AppFooterControls
+          repoUrl="https://github.com/AaronV/workout-template"
+          onExportData={exportAllData}
+          onImportData={importAllData}
+          onClearAllData={clearAllData}
+        />
       </div>
     </main>
   )

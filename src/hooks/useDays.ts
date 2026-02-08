@@ -117,6 +117,11 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
     setDayExerciseIds((currentIds) => currentIds.filter((id) => id !== exerciseId))
   }
 
+  const replaceDays = (nextDays: ExerciseDay[]) => {
+    setDays(nextDays)
+    resetDayForm(nextDays.length)
+  }
+
   return {
     days,
     sortedExercises,
@@ -136,5 +141,6 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
     handleDeleteDay,
     resetDayForm,
     removeExerciseReferences,
+    replaceDays,
   }
 }
