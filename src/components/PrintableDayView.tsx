@@ -23,7 +23,7 @@ function PrintableDayView({
   ]
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <section className="no-print rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="text-lg font-semibold">Printable View</h2>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -119,7 +119,7 @@ function PrintableDayView({
           <p className="text-sm text-slate-500">Create and select a day to view a printable template.</p>
         )}
       </section>
-    </>
+    </div>
   )
 }
 

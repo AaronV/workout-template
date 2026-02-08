@@ -295,18 +295,20 @@ function App() {
                 onEditDay={handleEditDay}
                 onDeleteDay={handleDeleteDay}
               />
-            ) : (
-              <PrintableDayView
-                days={days}
-                selectedPrintDayId={selectedPrintDayId}
-                printableDay={printableDay}
-                exerciseLookup={exerciseLookup}
-                onSelectedPrintDayIdChange={setSelectedPrintDayId}
-                onPrint={() => window.print()}
-              />
-            )}
+            ) : null}
           </div>
         </section>
+
+        {activeTab === 'print' ? (
+          <PrintableDayView
+            days={days}
+            selectedPrintDayId={selectedPrintDayId}
+            printableDay={printableDay}
+            exerciseLookup={exerciseLookup}
+            onSelectedPrintDayIdChange={setSelectedPrintDayId}
+            onPrint={() => window.print()}
+          />
+        ) : null}
       </div>
     </main>
   )
