@@ -15,6 +15,7 @@ const TABS: Array<{ id: ActiveTab; label: string }> = [
 function App() {
   const [initialData] = useState(() => loadData())
   const [isPrintViewOpen, setIsPrintViewOpen] = useState(false)
+  const [shouldAutoPrint, setShouldAutoPrint] = useState(false)
   const {
     activeTab,
     setActiveTab,
@@ -35,17 +36,33 @@ function App() {
   useEffect(() => {
     if (!printableDay) {
       setIsPrintViewOpen(false)
+      setShouldAutoPrint(false)
     }
   }, [printableDay])
+
+  useEffect(() => {
+    if (!isPrintViewOpen || !printableDay || !shouldAutoPrint) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      window.print()
+      setShouldAutoPrint(false)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isPrintViewOpen, printableDay, shouldAutoPrint])
 
   const handleOpenPrintView = (dayId: string) => {
     setSelectedPrintDayId(dayId)
     setActiveTab('days')
     setIsPrintViewOpen(true)
+    setShouldAutoPrint(true)
   }
 
   const handleClosePrintView = () => {
     setIsPrintViewOpen(false)
+    setShouldAutoPrint(false)
   }
 
   return (
