@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { MAX_DAY_EXERCISES, type Exercise, type ExerciseDay } from '../types'
+import { type Exercise, type ExerciseDay } from '../types'
 
 function makeId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -46,7 +46,6 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
   const addExerciseToDay = (exerciseId: string) => {
     if (!exerciseId) return 'missing' as const
     if (dayExerciseIds.includes(exerciseId)) return 'duplicate' as const
-    if (dayExerciseIds.length >= MAX_DAY_EXERCISES) return 'full' as const
 
     setDayExerciseIds((currentIds) => [...currentIds, exerciseId])
     return 'added' as const

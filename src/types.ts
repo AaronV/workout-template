@@ -32,4 +32,3 @@ export const STORAGE_KEY = 'workout-template-data'
 export const STORAGE_VERSION = 2
 export const DEFAULT_REPS = '8-10'
 export const DEFAULT_REST = '90s'
-export const MAX_DAY_EXERCISES = 5

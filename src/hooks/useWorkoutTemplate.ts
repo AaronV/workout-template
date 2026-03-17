@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { clearStoredData, parseImportedData, saveData, serializeData } from '../lib/storage'
-import { DEFAULT_REPS, DEFAULT_REST, MAX_DAY_EXERCISES, type Exercise, type ExerciseDay } from '../types'
+import { DEFAULT_REPS, DEFAULT_REST, type Exercise, type ExerciseDay } from '../types'
 import { useDays } from './useDays'
 import { useExercises } from './useExercises'
 import { usePrintSelection } from './usePrintSelection'
@@ -66,9 +66,7 @@ export function useWorkoutTemplate({ initialExercises, initialDays }: UseWorkout
     }
 
     const addResult = daysState.addExerciseToDay(savedExercise.id)
-    if (addResult === 'full') {
-      setQuickAddExerciseFeedback('Exercise saved, but this day already has the maximum number of exercises.')
-    } else if (addResult === 'duplicate') {
+    if (addResult === 'duplicate') {
       setQuickAddExerciseFeedback('Exercise saved, but it was already included in this day.')
     } else {
       setQuickAddExerciseFeedback('')
@@ -152,7 +150,6 @@ export function useWorkoutTemplate({ initialExercises, initialDays }: UseWorkout
       days: daysState.days,
       sortedExercises: daysState.sortedExercises,
       exerciseLookup: daysState.exerciseLookup,
-      maxDayExercises: MAX_DAY_EXERCISES,
       isQuickAddExerciseOpen,
       quickAddExerciseName,
       quickAddExerciseReps,
