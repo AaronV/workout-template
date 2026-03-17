@@ -23,7 +23,7 @@ type DayEditorProps = {
   onSelectedDayExerciseIdChange: (value: string) => void
   onAddExerciseToDay: () => void
   onRemoveExerciseFromDay: (exerciseId: string) => void
-  onMoveExerciseInDay: (exerciseId: string, direction: 'up' | 'down') => void
+  onReorderExerciseInDay: (exerciseId: string, targetIndex: number) => void
   onOpenQuickAddExercise: () => void
   onCloseQuickAddExercise: () => void
   onQuickAddExerciseNameChange: (value: string) => void
@@ -60,7 +60,7 @@ function DayEditor({
   onSelectedDayExerciseIdChange,
   onAddExerciseToDay,
   onRemoveExerciseFromDay,
-  onMoveExerciseInDay,
+  onReorderExerciseInDay,
   onOpenQuickAddExercise,
   onCloseQuickAddExercise,
   onQuickAddExerciseNameChange,
@@ -76,6 +76,10 @@ function DayEditor({
   onPrintDay,
 }: DayEditorProps) {
   const [exerciseSearch, setExerciseSearch] = useState('')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [highlightedExerciseIndex, setHighlightedExerciseIndex] = useState(0)
+  const [draggedExerciseId, setDraggedExerciseId] = useState<string | null>(null)
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null)
   const isSelectedExerciseEditable = Boolean(selectedDayExerciseId && exerciseLookup.has(selectedDayExerciseId))
   const isQuickAddSaveDisabled = !quickAddExerciseName.trim()
   const isSavingDisabled = !dayTitle.trim() || dayExerciseIds.length === 0
@@ -104,6 +108,34 @@ function DayEditor({
     setExerciseSearch(selectedExercise?.name ?? '')
   }, [exerciseLookup, selectedDayExerciseId])
 
+  useEffect(() => {
+    setHighlightedExerciseIndex(0)
+  }, [exerciseSearch, isSearchFocused])
+
+  useEffect(() => {
+    if (matchingExercises.length === 0) {
+      setHighlightedExerciseIndex(0)
+      return
+    }
+
+    setHighlightedExerciseIndex((currentIndex) => Math.min(currentIndex, matchingExercises.length - 1))
+  }, [matchingExercises])
+
+  const handleSelectExercise = (exercise: Exercise) => {
+    onSelectedDayExerciseIdChange(exercise.id)
+    setExerciseSearch(exercise.name)
+    setHighlightedExerciseIndex(matchingExercises.findIndex((item) => item.id === exercise.id))
+  }
+
+  const handleAddSelectedExercise = () => {
+    if (!selectedDayExerciseId) {
+      return
+    }
+
+    onAddExerciseToDay()
+    setIsSearchFocused(false)
+  }
+
   const renderDayForm = () => (
     <form className="mt-4 space-y-3" onSubmit={onSaveDay}>
       <input
@@ -128,30 +160,73 @@ function DayEditor({
                 onChange={(event) => {
                   const nextValue = event.target.value
                   setExerciseSearch(nextValue)
+                  setIsSearchFocused(true)
 
                   const exactMatch = availableExercises.find(
                     (exercise) => exercise.name.toLowerCase() === nextValue.trim().toLowerCase(),
                   )
                   onSelectedDayExerciseIdChange(exactMatch?.id ?? '')
                 }}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault()
+                    setIsSearchFocused(true)
+                    setHighlightedExerciseIndex((currentIndex) =>
+                      matchingExercises.length === 0 ? 0 : Math.min(currentIndex + 1, matchingExercises.length - 1),
+                    )
+                    return
+                  }
+
+                  if (event.key === 'ArrowUp') {
+                    event.preventDefault()
+                    setHighlightedExerciseIndex((currentIndex) => Math.max(currentIndex - 1, 0))
+                    return
+                  }
+
+                  if (event.key === 'Enter') {
+                    if (matchingExercises.length === 0 && !selectedDayExerciseId) {
+                      return
+                    }
+
+                    event.preventDefault()
+
+                    const highlightedExercise = matchingExercises[highlightedExerciseIndex]
+                    if (highlightedExercise) {
+                      handleSelectExercise(highlightedExercise)
+                    }
+
+                    if (highlightedExercise || selectedDayExerciseId) {
+                      window.setTimeout(() => {
+                        handleAddSelectedExercise()
+                      }, 0)
+                    }
+                    return
+                  }
+
+                  if (event.key === 'Escape') {
+                    setIsSearchFocused(false)
+                  }
+                }}
                 disabled={availableExercises.length === 0}
               />
 
-              {availableExercises.length > 0 ? (
+              {availableExercises.length > 0 && isSearchFocused ? (
                 <div className="mt-2 max-h-44 overflow-y-auto rounded-md border border-slate-200 bg-white">
                   {matchingExercises.length > 0 ? (
-                    matchingExercises.map((exercise) => (
+                    matchingExercises.map((exercise, index) => (
                       <button
                         key={exercise.id}
                         type="button"
+                        onMouseDown={(event) => event.preventDefault()}
                         className={`block w-full px-3 py-2 text-left text-sm ${
-                          selectedDayExerciseId === exercise.id
+                          highlightedExerciseIndex === index || selectedDayExerciseId === exercise.id
                             ? 'bg-slate-900 text-white'
                             : 'text-slate-700 hover:bg-slate-100'
                         }`}
                         onClick={() => {
-                          onSelectedDayExerciseIdChange(exercise.id)
-                          setExerciseSearch(exercise.name)
+                          handleSelectExercise(exercise)
                         }}
                       >
                         {exercise.name}
@@ -166,7 +241,7 @@ function DayEditor({
             <button
               type="button"
               className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={onAddExerciseToDay}
+              onClick={handleAddSelectedExercise}
               disabled={!selectedDayExerciseId}
             >
               Add to Day
@@ -260,37 +335,48 @@ function DayEditor({
         <ol className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
           {dayExerciseIds.map((exerciseId, index) => {
             const exercise = exerciseLookup.get(exerciseId)
-            const isFirstExercise = index === 0
-            const isLastExercise = index === dayExerciseIds.length - 1
             return (
-              <li key={`${exerciseId}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+              <li
+                key={`${exerciseId}-${index}`}
+                className={`flex items-center justify-between gap-3 rounded-md border border-transparent px-2 py-2 text-sm ${
+                  dropTargetIndex === index ? 'border-slate-300 bg-white' : ''
+                }`}
+                draggable
+                onDragStart={(event) => {
+                  setDraggedExerciseId(exerciseId)
+                  setDropTargetIndex(index)
+                  event.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  setDropTargetIndex(index)
+                  event.dataTransfer.dropEffect = 'move'
+                }}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  if (draggedExerciseId) {
+                    onReorderExerciseInDay(draggedExerciseId, index)
+                  }
+                  setDraggedExerciseId(null)
+                  setDropTargetIndex(null)
+                }}
+                onDragEnd={() => {
+                  setDraggedExerciseId(null)
+                  setDropTargetIndex(null)
+                }}
+              >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="min-w-0 flex-1">
+                  <span className="cursor-grab text-slate-400" aria-hidden="true">
+                    ::
+                  </span>
+                  <span className="min-w-0">
                     {index + 1}. {exercise ? exercise.name : '[Removed exercise]'}
                   </span>
                   {exercise?.notes ? (
-                    <span className="max-w-xs truncate text-right text-xs text-slate-500">{exercise.notes}</span>
+                    <span className="min-w-0 truncate text-xs text-slate-500">{exercise.notes}</span>
                   ) : null}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => onMoveExerciseInDay(exerciseId, 'up')}
-                    disabled={isFirstExercise}
-                    aria-label={`Move ${exercise ? exercise.name : 'exercise'} up`}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => onMoveExerciseInDay(exerciseId, 'down')}
-                    disabled={isLastExercise}
-                    aria-label={`Move ${exercise ? exercise.name : 'exercise'} down`}
-                  >
-                    ↓
-                  </button>
                   <button
                     type="button"
                     className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-white"

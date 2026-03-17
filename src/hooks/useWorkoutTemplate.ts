@@ -162,7 +162,7 @@ export function useWorkoutTemplate({ initialExercises, initialDays }: UseWorkout
       onSelectedDayExerciseIdChange: daysState.setSelectedDayExerciseId,
       onAddExerciseToDay: daysState.handleAddExerciseToDay,
       onRemoveExerciseFromDay: daysState.handleRemoveExerciseFromDay,
-      onMoveExerciseInDay: daysState.handleMoveExerciseInDay,
+      onReorderExerciseInDay: daysState.handleReorderExerciseInDay,
       onOpenQuickAddExercise: handleOpenQuickAddExercise,
       onCloseQuickAddExercise: handleCloseQuickAddExercise,
       onQuickAddExerciseNameChange: setQuickAddExerciseName,

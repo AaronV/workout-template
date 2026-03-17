@@ -79,6 +79,20 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
     })
   }
 
+  const handleReorderExerciseInDay = (exerciseId: string, targetIndex: number) => {
+    setDayExerciseIds((currentIds) => {
+      const currentIndex = currentIds.indexOf(exerciseId)
+      if (currentIndex === -1) return currentIds
+      if (targetIndex < 0 || targetIndex >= currentIds.length) return currentIds
+      if (currentIndex === targetIndex) return currentIds
+
+      const nextIds = [...currentIds]
+      const [movedExerciseId] = nextIds.splice(currentIndex, 1)
+      nextIds.splice(targetIndex, 0, movedExerciseId)
+      return nextIds
+    })
+  }
+
   const handleSaveDay = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedTitle = dayTitle.trim()
@@ -160,6 +174,7 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
     handleAddExerciseToDay,
     handleRemoveExerciseFromDay,
     handleMoveExerciseInDay,
+    handleReorderExerciseInDay,
     handleSaveDay,
     handleEditDay,
     handleOpenCreateDay,
