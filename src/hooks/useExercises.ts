@@ -14,6 +14,13 @@ type UseExercisesOptions = {
   initialExercises: Exercise[]
 }
 
+type ExerciseDraft = {
+  name: string
+  reps: string
+  rest: string
+  notes: string
+}
+
 export function useExercises({ initialExercises }: UseExercisesOptions) {
   const [exerciseName, setExerciseName] = useState('')
   const [exerciseReps, setExerciseReps] = useState(DEFAULT_REPS)
@@ -32,26 +39,42 @@ export function useExercises({ initialExercises }: UseExercisesOptions) {
     setIsExerciseModalOpen(false)
   }
 
-  const handleSaveExercise = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const trimmedExerciseName = exerciseName.trim()
+  const saveExercise = (draft: ExerciseDraft, existingExerciseId?: string | null) => {
+    const trimmedExerciseName = draft.name.trim()
     if (!trimmedExerciseName) return
 
     const nextExercise: Exercise = {
-      id: editingExerciseId ?? makeId(),
+      id: existingExerciseId ?? makeId(),
       name: trimmedExerciseName,
-      reps: exerciseReps.trim(),
-      rest: exerciseRest.trim(),
-      notes: exerciseNotes.trim(),
+      reps: draft.reps.trim(),
+      rest: draft.rest.trim(),
+      notes: draft.notes.trim(),
     }
 
-    if (editingExerciseId) {
+    if (existingExerciseId) {
       setExercises((currentExercises) =>
-        currentExercises.map((exercise) => (exercise.id === editingExerciseId ? nextExercise : exercise)),
+        currentExercises.map((exercise) => (exercise.id === existingExerciseId ? nextExercise : exercise)),
       )
     } else {
       setExercises((currentExercises) => [...currentExercises, nextExercise])
     }
+
+    return nextExercise
+  }
+
+  const handleSaveExercise = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const savedExercise = saveExercise(
+      {
+        name: exerciseName,
+        reps: exerciseReps,
+        rest: exerciseRest,
+        notes: exerciseNotes,
+      },
+      editingExerciseId,
+    )
+    if (!savedExercise) return
 
     resetExerciseForm()
   }
@@ -77,6 +100,10 @@ export function useExercises({ initialExercises }: UseExercisesOptions) {
     setIsExerciseModalOpen(true)
   }
 
+  const handleSaveExerciseDraft = (draft: ExerciseDraft) => {
+    return saveExercise(draft)
+  }
+
   const replaceExercises = (nextExercises: Exercise[]) => {
     setExercises(nextExercises)
     resetExerciseForm()
@@ -98,6 +125,7 @@ export function useExercises({ initialExercises }: UseExercisesOptions) {
     handleDeleteExercise,
     handleEditExercise,
     handleOpenCreateExercise,
+    handleSaveExerciseDraft,
     replaceExercises,
     resetExerciseForm,
   }

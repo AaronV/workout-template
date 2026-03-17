@@ -43,17 +43,41 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
     setIsDayModalOpen(false)
   }
 
-  const handleAddExerciseToDay = () => {
-    if (!selectedDayExerciseId) return
-    if (dayExerciseIds.includes(selectedDayExerciseId)) return
-    if (dayExerciseIds.length >= MAX_DAY_EXERCISES) return
+  const addExerciseToDay = (exerciseId: string) => {
+    if (!exerciseId) return 'missing' as const
+    if (dayExerciseIds.includes(exerciseId)) return 'duplicate' as const
+    if (dayExerciseIds.length >= MAX_DAY_EXERCISES) return 'full' as const
 
-    setDayExerciseIds((currentIds) => [...currentIds, selectedDayExerciseId])
-    setSelectedDayExerciseId('')
+    setDayExerciseIds((currentIds) => [...currentIds, exerciseId])
+    return 'added' as const
+  }
+
+  const handleAddExerciseToDay = () => {
+    const result = addExerciseToDay(selectedDayExerciseId)
+    if (result === 'added') {
+      setSelectedDayExerciseId('')
+    }
   }
 
   const handleRemoveExerciseFromDay = (exerciseId: string) => {
     setDayExerciseIds((currentIds) => currentIds.filter((id) => id !== exerciseId))
+  }
+
+  const handleMoveExerciseInDay = (exerciseId: string, direction: 'up' | 'down') => {
+    setDayExerciseIds((currentIds) => {
+      const currentIndex = currentIds.indexOf(exerciseId)
+      if (currentIndex === -1) return currentIds
+
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      if (targetIndex < 0 || targetIndex >= currentIds.length) {
+        return currentIds
+      }
+
+      const nextIds = [...currentIds]
+      const [movedExerciseId] = nextIds.splice(currentIndex, 1)
+      nextIds.splice(targetIndex, 0, movedExerciseId)
+      return nextIds
+    })
   }
 
   const handleSaveDay = (event: FormEvent<HTMLFormElement>) => {
@@ -133,8 +157,10 @@ export function useDays({ initialDays, exercises }: UseDaysOptions) {
     isDayModalOpen,
     setDayTitle,
     setSelectedDayExerciseId,
+    addExerciseToDay,
     handleAddExerciseToDay,
     handleRemoveExerciseFromDay,
+    handleMoveExerciseInDay,
     handleSaveDay,
     handleEditDay,
     handleOpenCreateDay,
